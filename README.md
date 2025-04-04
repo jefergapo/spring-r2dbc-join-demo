@@ -1,44 +1,27 @@
-# Implementing Joins with Spring R2DBC: A Practical Example
-
-## Introduction
-
-This example demonstrates how to perform a JOIN operation in a Spring R2DBC application to fetch data from two related tables: `menu_item` and `menu_item_image`. Due to the relative newness of Spring R2DBC, finding comprehensive examples for more complex queries like joins can be challenging. This implementation showcases a programmatic approach using Spring Data Relational's SQL Domain Specific Language (DSL) and the `R2dbcEntityTemplate`.
-
-This example focuses on retrieving all menu items for a specific organization, along with their associated images, in a non-blocking reactive manner.
-
-## Problem Statement
-
-While Spring Data R2DBC provides repository abstractions for basic CRUD operations, implementing more complex queries like JOINs often requires dropping down to a more programmatic level. The official documentation and readily available examples for such scenarios might be less extensive compared to traditional JDBC or Spring Data JPA. This example aims to bridge that gap by providing a clear and functional implementation of a JOIN operation using Spring R2DBC.
-
-## Solution Overview
-
-The `MenuItemSqlRepository` implements the `MenuItemRepository` interface and utilizes `R2dbcEntityTemplate` to interact with the database. The `findAllByOrganizationWithImages` method demonstrates the JOIN operation.
-
-The approach involves the following steps:
-
-1.  **Defining Table and Column Metadata:** Static inner classes (`MenuItemTable` and `MenuItemImageSqlRepository.MenuItemImageTable`) are used to define the table and column names in a type-safe manner, leveraging Spring Data Relational's `Table` and `Column` objects.
-2.  **Programmatic SQL Construction:** The `Select` statement is built programmatically using Spring Data Relational's SQL DSL. This allows for explicit control over the JOIN condition and the selected columns.
-3.  **Rendering SQL:** The programmatic `Select` object is rendered into a standard SQL query string using `SqlRenderer`.
-4.  **Executing the Query:** The `R2dbcEntityTemplate`'s `DatabaseClient` is used to execute the rendered SQL query, returning a `Flux` of `Map<String, Object>`, where each map represents a row from the joined result set.
-5.  **Buffering Results:** The `bufferUntilChanged` operator is crucial for handling the one-to-many relationship between `MenuItem` and `MenuItemImage`. It groups the rows based on the `menu_item.id`, ensuring that all images for a single menu item are processed together.
-6.  **Mapping to Domain Model:** The `mapToModel` method takes a list of rows (representing a `MenuItem` and its associated images) and maps them to a `MenuItem` domain object with a list of `MenuItemImage` objects. This mapping is facilitated by the `RowObjectMapper` utility class.
-
-## Prerequisites
-
-* Java Development Kit (JDK) 17 or higher
-* Maven or Gradle for dependency management
-* A running RDBMS (e.g., PostgreSQL, MySQL, H2) with the `menu_item` and `menu_item_image` tables created and populated with data. Ensure the table schemas match the definitions in `MenuItemTable` and `MenuItemImageSqlRepository.MenuItemImageTable`.
-* Spring Boot project configured with R2DBC dependencies for your chosen database.
-
 ## Setup and Running the Example
 
-1.  **Add R2DBC Dependencies:** Include the necessary R2DBC dependencies in your `pom.xml` (for Maven) or `build.gradle` (for Gradle). For example, for PostgreSQL:
+This example is configured to run against a PostgreSQL database using Docker.
+
+1.  **Ensure Docker is Installed:** Make sure you have Docker installed and running on your system.
+
+2.  **Run the PostgreSQL Container:** Open your terminal and execute the following command to start a PostgreSQL container:
+
+    ```bash
+    docker run --name demo -e POSTGRES_PASSWORD=demo -p 15432:5432 -d postgres:17-alpine
+    ```
+3.  **Configure PostgreSQL Connection in Spring Boot:** Modify your `application.properties` or `application.yml` file to connect to the PostgreSQL container:
+
+    ```properties
+    spring.r2dbc.url=r2dbc:postgresql://localhost:5432/postgres
+    spring.r2dbc.username=postgres
+    spring.r2dbc.password=demo
+    ```
+
+4.  **Add PostgreSQL R2DBC Driver Dependency:** Ensure your `pom.xml` (Maven) or `build.gradle` (Gradle) file includes:
+
+    **Maven (`pom.xml`):**
 
     ```xml
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-r2dbc</artifactId>
-    </dependency>
     <dependency>
         <groupId>io.r2dbc</groupId>
         <artifactId>r2dbc-postgresql</artifactId>
@@ -51,55 +34,162 @@ The approach involves the following steps:
     </dependency>
     ```
 
+    **Gradle (`build.gradle`):**
+
     ```gradle
-    // Gradle
-    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
     runtimeOnly 'io.r2dbc:r2dbc-postgresql'
     runtimeOnly 'org.postgresql:postgresql'
     ```
 
-2.  **Configure Database Connection:** Configure your database connection details in your `application.properties` or `application.yml` file:
+5.  **Update Liquibase Configuration for PostgreSQL:** Ensure your Liquibase configuration in `application.properties` or `application.yml` is pointing to the PostgreSQL database. Spring Boot R2DBC will handle the schema creation based on your changelogs. You might need to adjust the Liquibase JDBC URL if you have specific requirements.
 
-    ```properties
-    spring.r2dbc.url=r2dbc:postgresql://localhost:5432/your_database
-    spring.r2dbc.username=your_username
-    spring.r2dbc.password=your_password
-    ```
+6.  **Run Your Spring Boot Application:**
 
-3.  **Create Database Tables:** Ensure you have the `menu_item` and `menu_item_image` tables created in your database with the following schema (adjust data types as needed for your specific database):
+    * **Using Maven:** Open your terminal in the root directory of your project and run:
+        ```bash
+        mvn spring-boot:run
+        ```
 
-    ```sql
-    -- menu_item table
-    CREATE TABLE menu_item (
-        id UUID PRIMARY KEY,
-        organization_id UUID NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        description TEXT,
-        status VARCHAR(50) NOT NULL,
-        seasonal BOOLEAN NOT NULL DEFAULT FALSE,
-        type VARCHAR(50),
-        house_special BOOLEAN NOT NULL DEFAULT FALSE,
-        price DECIMAL(10, 2) NOT NULL,
-        created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
+    * **Using Gradle:** Open your terminal in the root directory of your project and run:
+        ```bash
+        ./gradlew bootRun
+        ```
 
-    -- menu_item_image table
-    CREATE TABLE menu_item_image (
-        id UUID PRIMARY KEY,
-        menu_item_id UUID NOT NULL REFERENCES menu_item(id),
-        url VARCHAR(255) NOT NULL,
-        alt_text VARCHAR(255),
-        created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-    ```
-
-4.  **Populate Data:** Insert some sample data into both tables, ensuring that some menu items have associated images.
-
-5.  **Run Your Spring Boot Application:** Execute your Spring Boot application. You can then call the `findAllByOrganizationWithImages` method in your `MenuItemSqlRepository` (e.g., from a service or controller) by providing a valid `organizationId`. The resulting `Flux<MenuItem>` will contain menu items with their associated image lists.
-
-## Code Snippet with Comments
+    Liquibase will automatically run the database migrations against the PostgreSQL database running in Docker, and the application will then connect to it.
 
 ```java
-// [Your MenuItemSqlRepository code with the comments I helped you add]
+```java
+package com.jeffgapo.todo.infrastructure.repository.sql.menu;
+
+import com.jeffgapo.todo.domain.contracts.menu.MenuItemRepository;
+import com.jeffgapo.todo.domain.model.menu.MenuItem;
+import com.jeffgapo.todo.domain.model.menu.MenuItemImage;
+import com.jeffgapo.todo.infrastructure.repository.sql.util.RowObjectMapper;
+import com.jeffgapo.todo.infrastructure.repository.sql.util.SqlUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
+import org.springframework.data.relational.core.query.Criteria;
+import org.springframework.data.relational.core.query.Query;
+import org.springframework.data.relational.core.sql.*;
+import org.springframework.data.relational.core.sql.render.SqlRenderer;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@Repository
+public class MenuItemSqlRepository implements MenuItemRepository {
+    private final R2dbcEntityTemplate template;
+
+    public MenuItemSqlRepository(R2dbcEntityTemplate template) {
+        this.template = template;
+    }
+
+    /**
+     * Retrieves all MenuItems associated with a given organization ID, along with their associated images.
+     * This implementation demonstrates how to perform a JOIN operation using Spring R2DBC's programmatic SQL API.
+     *
+     * @param organizationId The UUID of the organization whose menu items are to be retrieved.
+     * @return A Flux of MenuItem objects, where each MenuItem contains a list of its associated MenuItemImages.
+     */
+    @Override
+    public Flux<MenuItem> findAllByOrganizationWithImages(UUID organizationId) {
+        // 1. Define the columns to select from both tables.
+        // We combine all columns from MenuItemTable and MenuItemImageTable.
+        Column[] columns = ArrayUtils.addAll(MenuItemTable.allColumns, MenuItemImageSqlRepository.MenuItemImageTable.allColumns);
+
+        // 2. Build the SELECT statement programmatically using Spring Data Relational's SQL DSL.
+        Select select = Select.builder()
+                .select(columns) // Select all defined columns.
+                .from(MenuItemTable.table) // Start with the MenuItemTable.
+                .join(MenuItemImageSqlRepository.MenuItemImageTable.table) // Perform an inner join with MenuItemImageTable.
+                .on(MenuItemImageSqlRepository.MenuItemImageTable.menu_item_id) // Specify the join condition: menuItemImage.menu_item_id
+                .equals(MenuItemTable.id) // is equal to menuItem.id.
+                .where(MenuItemTable.organization_id.isEqualTo(SQL.literalOf(organizationId.toString()))) // Filter by the given organization ID.
+                .build();
+
+        // 3. Render the programmatic SQL statement into a plain SQL string.
+        SqlRenderer renderer = SqlRenderer.create();
+        String renderedSelect = renderer.render(select);
+
+        // 4. Execute the rendered SQL query using R2dbcEntityTemplate's DatabaseClient.
+        return template.getDatabaseClient()
+                .sql(renderedSelect) // Provide the rendered SQL string.
+                .fetch().all() // Fetch all rows returned by the query as a Flux of Map<String, Object>.
+                // 5. Buffer the results until the 'id' of the MenuItem changes.
+                // This is crucial because a single MenuItem can have multiple images, resulting in multiple rows
+                // with the same MenuItem ID but different image details.
+                .bufferUntilChanged(row -> row.get(MenuItemTable.id.toString()))
+                // 6. Map each buffered list of rows (representing a single MenuItem and its images) to a MenuItem model.
+                .map(this::mapToModel);
+    }
+
+    /**
+     * Maps a list of rows (representing a MenuItem and its associated images) to a MenuItem domain model.
+     *
+     * @param rows A list of Maps, where each map represents a row returned from the JOIN query. The first row
+     * in the list contains the main MenuItem attributes, and subsequent rows (if any) contain
+     * the attributes of associated MenuItemImages.
+     * @return A MenuItem object populated with data from the rows, including a list of its images.
+     */
+    private MenuItem mapToModel(List<Map<String, Object>> rows) {
+        // The first row in the list contains the MenuItem's base attributes.
+        Map<String, Object> row = rows.getFirst();
+        // Use RowObjectMapper to map the columns from the MenuItem table to a MenuItem object.
+        MenuItem menuItem = RowObjectMapper.apply(row, MenuItem.class, MenuItemTable.TABLE_NAME);
+
+        // Create a list to hold the MenuItemImages.
+        List<MenuItemImage> images = rows.stream()
+                // For each row in the list (including the first one), attempt to map it to a MenuItemImage.
+                .map(rowImage ->
+                        // Use RowObjectMapper to map the columns from the MenuItemImage table to a MenuItemImage object.
+                        RowObjectMapper.apply(rowImage,
+                                MenuItemImage.class,
+                                MenuItemImageSqlRepository.MenuItemImageTable.TABLE_NAME))
+                .toList();
+
+        // Set the list of images to the MenuItem.
+        menuItem.setImages(images);
+
+        return menuItem;
+    }
+
+    /**
+     * Defines the schema and column names for the 'menu_item' table.
+     * This static inner class provides a structured way to refer to table and column names,
+     * reducing the risk of typos and improving code readability.
+     */
+    static class MenuItemTable {
+        private static final String TABLE_NAME = "menu_item";
+
+        public static Table table = Table.create(TABLE_NAME);
+        public static Column id = SqlUtils.createColumn("id", table);
+        public static Column organization_id = SqlUtils.createColumn("organization_id", table);
+        public static Column name = SqlUtils.createColumn("name", table);
+        public static Column description = SqlUtils.createColumn("description", table);
+        public static Column status = SqlUtils.createColumn("status", table);
+        public static Column seasonal = SqlUtils.createColumn("seasonal", table);
+        public static Column type = SqlUtils.createColumn("type", table);
+        public static Column house_special = SqlUtils.createColumn("house_special", table);
+        public static Column price = SqlUtils.createColumn("price", table);
+        public static Column created_at = SqlUtils.createColumn("created_at", table);
+        public static Column updated_at = SqlUtils.createColumn("updated_at", table);
+        public static Column[] allColumns = {
+                id
+                , organization_id
+                , name
+                , description
+                , status
+                , seasonal
+                , type
+                , house_special
+                , price
+                , created_at
+                , updated_at
+        };
+
+    }
+}

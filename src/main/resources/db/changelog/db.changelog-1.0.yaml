@@ -1,0 +1,110 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-menu-item-table
+      author: Jeff
+      changes:
+        - createTable:
+            tableName: menu_item
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(255)
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seasonal
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: type
+                  type: VARCHAR(50)
+              - column:
+                  name: house_special
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: price
+                  type: DECIMAL(10, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+  - changeSet:
+      id: create-menu-item-image-table
+      author: Jeff
+      changes:
+        - createTable:
+            tableName: menu_item_image
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: menu_item_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_menu_item_image_item
+                    references: menu_item(id)
+              - column:
+                  name: url
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: alt_text
+                  type: VARCHAR(255)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+  - changeSet:
+      id: load-menu-item-data
+      author: Jeff
+      changes:
+        - loadData:
+            tableName: menu_item
+            file: classpath:db/data/menu_item.csv
+            separator: ","
+            quotchar: '"'
+            encoding: UTF-8
+  - changeSet:
+      id: load-menu-item-image-data
+      author: Jeff
+      changes:
+        - loadData:
+            tableName: menu_item_image
+            file: classpath:db/data/menu_item_image.csv
+            separator: ","
+            quotchar: '"'
+            encoding: UTF-8

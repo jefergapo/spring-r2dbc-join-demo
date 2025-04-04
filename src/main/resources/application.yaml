@@ -1,0 +1,25 @@
+logging:
+  level:
+    io.r2dbc.postgresql.QUERY: INFO # for queries
+    io.r2dbc.postgresql.PARAM: INFO # for parameters
+spring:
+  devtools:
+    restart:
+      enabled: true      # Enable auto-restart
+      additional-paths: src/main/java  # Watch source directory
+      exclude: static/**, public/**    # Ignore static resources
+  logging:
+    pattern:
+      console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    level:
+      roo: INFO
+  r2dbc:
+    url: r2dbc:postgresql://localhost:15432/
+    username: postgres
+    password: demo
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+    enabled: true                 # Ensure Liquibase runs on startup
+    url: jdbc:postgresql://localhost:15432/
+    user: postgres
+    password: demo

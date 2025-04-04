@@ -1,0 +1,4 @@
+"id","organization_id","name","description","status","seasonal","type","house_special","price","created_at","updated_at"
+"a1b2c3d4-e5f6-7890-1234-567890abcdef","b8d34b26-7a37-43e3-9256-b741ca4129c8","Delicious Burger","A Simple beef burger with all the fixings","AVAILABLE","false","Main","false","9.99","2024-01-15T10:00:00","2024-01-15T10:00:00"
+"f9e8d7c6-b5a4-3210-fedc-ba9876543210","b8d34b26-7a37-43e3-9256-b741ca4129c8","Margherita Pizza","Simple and classic tomato and mozzarella pizza","AVAILABLE","false","Main","true","12.50","2024-01-15T10:15:00","2024-01-15T10:15:00"
+"11223344-5566-7788-9900-aabbccddeeff","b8d34b26-7a37-43e3-9256-b741ca4129c8","Seasonal Salad","Fresh greens with seasonal vegetables","AVAILABLE","true","Appetizer","false","7.50","2024-02-20T14:00:00","2024-02-20T14:00:00"

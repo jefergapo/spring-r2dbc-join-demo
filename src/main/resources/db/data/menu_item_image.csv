@@ -1,0 +1,5 @@
+"id","menu_item_id","url","alt_text","created_at","updated_at"
+"f9e8d7c6-b5a4-4510-fedc-ba9876543210","a1b2c3d4-e5f6-7890-1234-567890abcdef","burger.jpg","Image of a delicious burger","2024-01-15T10:01:00","2024-01-15T10:01:00"
+"f9e8d7c6-b5a9-3210-fedc-ba9876543210","f9e8d7c6-b5a4-3210-fedc-ba9876543210","pizza.png","Image of a margherita pizza","2024-01-15T10:16:00","2024-01-15T10:16:00"
+"f9e8d8c6-b5a4-3210-fedc-ba9876543210","f9e8d7c6-b5a4-3210-fedc-ba9876543210","pizza_slice.png","A slice of margherita pizza","2024-01-15T10:17:00","2024-01-15T10:17:00"
+"f9e8d1c6-b5a4-3210-fedc-ba9876543210","11223344-5566-7788-9900-aabbccddeeff","salad.jpg","Fresh seasonal salad","2024-02-20T14:01:00","2024-02-20T14:01:00"

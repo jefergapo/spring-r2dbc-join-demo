@@ -8,6 +8,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class DatabaseInitializer implements CommandLineRunner {
@@ -21,16 +23,31 @@ public class DatabaseInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Example: Save initial menu items
+
+        CountDownLatch latch = new CountDownLatch(1);
         UUID orgId = UUID.fromString("b8d34b26-7a37-43e3-9256-b741ca4129c8");
+
 
         menuItemRepository.findAllByOrganizationWithImages(orgId)
                 .subscribe(item -> {
                     log.info("[FOUND ITEM] {}", item.toString());
                     item.getImages().forEach(image -> log.info("[ITEM IMAGE] {}", image.toString()));
-                }, error -> log.error(error.getMessage()));
+                    latch.countDown();
+                }, error -> {
+                    log.error("Error processing: {}", error.getMessage());
+                    latch.countDown();
+                });
+        try {
+            if (latch.await(1, TimeUnit.SECONDS)) {
+                log.info("Execution success");
+            } else {
+                log.error("Execution error: Time out");
+            }
 
-        Thread.sleep(2000);
+        } catch (InterruptedException ie){
+            log.error("execution error: {}", ie.getMessage());
+        }
+
 
     }
 }
